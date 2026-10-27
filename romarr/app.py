@@ -722,6 +722,8 @@ class ROMarr:
             # the walk runs, and a person looking for a platform the walk
             # has not reached concludes it is unsupported.
             server_platforms: dict[str, int] = {}
+            #: platform name -> cover width/height, for the ones that report it.
+            ratios: dict[str, float] = {}
             for _cfg, backend in self.game_libraries:
                 lister = getattr(backend, "platforms", None)
                 if not callable(lister):
@@ -733,13 +735,19 @@ class ROMarr:
                             server_platforms[name] = (
                                 server_platforms.get(name, 0)
                                 + int(row.get("count") or 0))
+                            # First server that reports a shape for this
+                            # platform wins, so a second library without one
+                            # does not blank it.
+                            if row.get("cover_ratio") and name not in ratios:
+                                ratios[name] = row["cover_ratio"]
                 except Exception as err:      # noqa: BLE001
                     log.warning("platform list unavailable from %s: %s",
                                 getattr(backend, "name", backend),
                                 err.__class__.__name__)
             if server_platforms:
                 self._server_platforms = [
-                    {"platform": name, "count": count}
+                    {"platform": name, "count": count,
+                     **({"cover_ratio": ratios[name]} if name in ratios else {})}
                     for name, count in sorted(server_platforms.items(),
                                               key=lambda kv: (-kv[1], kv[0]))]
             # Per library, so the Libraries page can say which one is unhappy

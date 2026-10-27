@@ -251,6 +251,36 @@ def _absolute(base: str, url: str) -> str:
     return f"{base.rstrip('/')}/{url.lstrip('/')}"
 
 
+#: A CSS ratio and nothing else. The value arrives from a library server and
+#: ends up in a `style` attribute, so `2/3;background:url(x)` has to be
+#: refused here rather than trusted because RomM validates on write.
+_COVER_RATIO = re.compile(r"^\d{1,4}(\.\d{1,3})?(\s*/\s*\d{1,4}(\.\d{1,3})?)?$")
+
+#: Outside this range a cover box is a slit or a stripe, which is a broken
+#: page rather than a shape anybody chose.
+COVER_RATIO_MIN = 0.2
+COVER_RATIO_MAX = 5.0
+
+
+def cover_ratio(value) -> float | None:
+    """A platform's cover aspect ratio as width/height, or None.
+
+    None means "use the layout default": a server that does not report one
+    (every backend but RomM, and RomM before 5.4.2) must keep the shape it
+    always had.
+    """
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        ratio = float(value)
+    elif isinstance(value, str) and _COVER_RATIO.match(value.strip()):
+        sides = [float(s) for s in value.split("/")]
+        if len(sides) == 2 and sides[1] == 0:
+            return None
+        ratio = sides[0] / sides[1] if len(sides) == 2 else sides[0]
+    else:
+        return None
+    return ratio if COVER_RATIO_MIN <= ratio <= COVER_RATIO_MAX else None
+
+
 # ------------------------------------------------------------------ Gaseous --
 
 @dataclass(frozen=True)

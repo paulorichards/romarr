@@ -20,7 +20,7 @@ from dataclasses import dataclass
 import requests
 
 from .libraries import (DEFAULT_BACKGROUND_TIMEOUT, Game,
-                        classify_provenance)
+                        classify_provenance, cover_ratio)
 
 log = logging.getLogger(__name__)
 
@@ -606,6 +606,7 @@ class Romm:
                                 or row.get("slug") or ""),
                 "slug": str(row.get("slug") or ""),
                 "count": count,
+                "cover_ratio": cover_ratio(row.get("aspect_ratio")),
             })
         return sorted(out, key=lambda p: (-p["count"], p["platform"]))
 

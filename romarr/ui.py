@@ -1048,9 +1048,22 @@ RENDER.library=async()=>{
     if(x.rating) bits.push(`<span class="pill">★ ${x.rating}</span>`);
     return bits.length?`<div style="margin-top:2px">${bits.join(' ')}</div>`:'';
   };
+  // A platform's cover shape, when its library server reports one: a SNES box
+  // is landscape and the 3/4 default crops nearly half its width. The number
+  // is already validated server-side; Number() guards the rest.
+  const ratios={};
+  for(const x of (d.platforms||[])){
+    const r=Number(x.cover_ratio);
+    if(x.platform&&isFinite(r)&&r>0) ratios[x.platform]=r;
+  }
+  const artStyle=g=>{
+    const r=ratios[g.platform||''];
+    return `background-image:url('${esc(g.cover||'')}')`
+      +(r?`;aspect-ratio:${r}`:'');
+  };
   const grid=`<div class="grid" id="lib-grid">${items.map((g,i)=>`<div class="tile"
       data-shelf="${i}" style="cursor:pointer" title="Click to set status, rating, notes">
-    <div class="art" style="background-image:url('${esc(g.cover||'')}')"></div>
+    <div class="art" style="${artStyle(g)}"></div>
     <div class="nm">${esc(g.name)}</div>
     <div class="pf">${esc(g.platform||'')}</div>${mark(g)}</div>`).join('')}</div>`;
   const more=LIB.offset+items.length<d.total
